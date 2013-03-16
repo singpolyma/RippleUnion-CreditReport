@@ -1,0 +1,7 @@
+user sigining a UserID is not strong enough.  Encrypt them a random number < 1 and have them ripple that amount of XRP, then whatever address ripples us that amount is their address.  This cannot be verified by others, but others can verify the key whatever way they want, all this does is let us assert on the website that the key is beloning to a certain address.
+
+only accept signed objects where there exists a direct credit relationship between the two parties.  because of this, we can only accept objects where we have a key => address association.
+
+how to tell us the key is not for this anymore?  key revocation or expiration seem to be the interesting cases, so use normal OpenPGP practises on these.
+
+REJECT EXPIRING SIGS!  SIGS LIVE FOREVER!

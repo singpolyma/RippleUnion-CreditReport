@@ -1,16 +1,21 @@
 module Main where
 
+-- Probably won't end up using this, but it's in here for reference for now
+
+import Control.Arrow ((***))
 import Data.List (find)
 import Data.Maybe (mapMaybe, listToMaybe)
 import Data.Binary (decode)
+import Data.Word
+import BaseConvert
+import Control.Error (readMay)
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
-
-newtype RippleAddress = RippleAddress String
-	deriving (Show, Eq)
+import qualified Crypto.Hash.SHA256 as SHA256
+import qualified Data.ByteString as BS
 
 userIDPacket :: RippleAddress -> OpenPGP.Packet
-userIDPacket (RippleAddress addr) = OpenPGP.UserIDPacket addr
+userIDPacket = OpenPGP.UserIDPacket . show
 
 -- | Fails if signature does not match
 -- returns address and key that signed it
@@ -31,7 +36,7 @@ addressFromSig (OpenPGP.CertificationSignature _ pkt _) = rippleUserID pkt
 addressFromSig _ = Nothing
 
 rippleUserID :: OpenPGP.Packet -> Maybe RippleAddress
-rippleUserID (OpenPGP.UserIDPacket adr@('r':_)) = Just (RippleAddress adr)
+rippleUserID (OpenPGP.UserIDPacket adr) = readMay adr
 rippleUserID _ = Nothing
 
 addressSigs :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, OpenPGP.SignatureOver)
