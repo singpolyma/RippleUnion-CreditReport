@@ -59,12 +59,11 @@ instance Aeson.ToJSON Commands where
 			(Aeson..=) (T.pack "account") (T.pack $ show adr)
 		]
 
-app :: WS.WebSockets WS.Hybi10 ()
-app = do
+app :: RippleAddress -> WS.WebSockets WS.Hybi10 (Maybe AccountLinesR)
+app adr = do
 	-- Ask for this account's direct trust lines
-	wsSendJSON (AccountLinesC $ read "r3ADD8kXSUKHd6zTCKfnKT3zV9EZHjzp1S")
-	v <- wsReceiveJSON -- Get the response
-	liftIO $ print (v :: Maybe AccountLinesR) -- Print the response
+	wsSendJSON (AccountLinesC adr)
+	wsReceiveJSON -- Get the response
 
 -- Connect to ripple.com and run the test app
-doit = WS.connect "s1.ripple.com" 51233 "/" app
+doit adr = WS.connect "s1.ripple.com" 51233 "/" (app adr)

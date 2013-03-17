@@ -24,7 +24,19 @@ data Object =
 	NotTrusted UTCTime RippleAddress
 	deriving (Eq)
 
+objectAddress :: Object -> RippleAddress
+objectAddress (MadePayment _ adr) = adr
+objectAddress (MissedPayment _ adr) = adr
+objectAddress (NotTrusted _ adr) = adr
+
+objectTime :: Object -> UTCTime
+objectTime (MadePayment t _) = t
+objectTime (MissedPayment t _) = t
+objectTime (NotTrusted t _) = t
+
 -- | Do OpenPGP verification and extract an object from a message
+-- TODO: reject expired/revoked keys
+-- TODO: REJECT EXPIRING SIGS!  SIGS LIVE FOREVER!
 verifyObject :: OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Object)
 verifyObject keys msg = listToMaybe $
 	mapMaybe (objectFromVerifiedSig keys) verifiedSigs
