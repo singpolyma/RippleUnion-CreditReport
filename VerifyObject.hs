@@ -1,6 +1,6 @@
 module VerifyObject where
 
-import Control.Monad (void)
+import Control.Monad (void, guard)
 import Control.Error (readMay, hush)
 import Data.Maybe (mapMaybe, listToMaybe)
 import Data.Base58Address (RippleAddress)
@@ -48,6 +48,7 @@ objectFromVerifiedSig :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (Open
 objectFromVerifiedSig keys (OpenPGP.DataSignature (OpenPGP.LiteralDataPacket {
 		OpenPGP.content = bytes
 	}) [sig]) = do
+		guard (signatureExpiry sig == Nothing) -- Reject expiring signatures
 		key <- issuerKey keys sig
 		text <- hush $ T.decodeUtf8' $ BS.concat $ LZ.toChunks $ bytes
 		object <- hush (parseOnly objectParser text)
@@ -59,6 +60,27 @@ issuerKey :: OpenPGP.Message -> OpenPGP.Packet -> Maybe OpenPGP.Packet
 issuerKey keys sig = do
 	issuer <- OpenPGP.signature_issuer sig
 	OpenPGP.find_key OpenPGP.fingerprint keys issuer
+
+-- | unhashed expiry is the same as no expiry
+-- If no creation time, also get a Nothing
+-- Return value is since POSIX epoch
+signatureExpiry :: OpenPGP.Packet -> Maybe Integer
+signatureExpiry p | OpenPGP.isSignaturePacket p = do
+	let pkts = OpenPGP.hashed_subpackets p
+	creationTime <- listToMaybe (mapMaybe creationTimeSubpacket pkts)
+	expiryAfter <- listToMaybe (mapMaybe expirySubpacket pkts)
+	return $! (creationTime + expiryAfter)
+signatureExpiry _ = Nothing
+
+creationTimeSubpacket :: OpenPGP.SignatureSubpacket -> Maybe Integer
+creationTimeSubpacket (OpenPGP.SignatureCreationTimePacket secs) =
+	Just $ fromIntegral secs
+creationTimeSubpacket _ = Nothing
+
+expirySubpacket :: OpenPGP.SignatureSubpacket -> Maybe Integer
+expirySubpacket (OpenPGP.SignatureExpirationTimePacket secs) =
+	Just $ fromIntegral secs
+expirySubpacket _ = Nothing
 
 -- Parse our objects from text
 objectParser :: Parser Object
