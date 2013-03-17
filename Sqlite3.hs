@@ -53,19 +53,20 @@ tryFind e p xs = noteT e $ hoistMaybe $ find p xs
 
 processObject :: Connection -> OpenPGP.Message -> IO (Either String (RippleAddress, Object))
 processObject conn msg = runEitherT $ do
+	time <- liftIO $ getCurrentTime
 	r <- liftIO $ findByKeyId conn (issuerKeyIds msg)
 	(adr,obj) <- tryHead "No valid signed object found." $
 		mapMaybe (\(AddressAndKey adr k) ->
-			fmap (first (const adr)) (verifyObject k msg)
+			fmap (first (const adr)) (verifyObject time k msg)
 		) r
+
+	when (objectTime obj > time) (throwT "Signed object claims to be from the future.")
+	when (time `diffUTCTime` objectTime obj > 3600) (throwT "Signed object is too old.")
+
 	AccountLinesR _ lines <- noteT (show adr ++ " has no credit relationships.") $ MaybeT $ doit adr
 	-- TODO: might have more than one credit relationship
 	line <- tryFind (show adr ++ " has no credit relationship with " ++ show (objectAddress obj))
 		((== objectAddress obj) . lineAccount) lines
-
-	time <- liftIO $ getCurrentTime
-	when (objectTime obj > time) (throwT "Signed object claims to be from the future.")
-	when (time `diffUTCTime` objectTime obj > 3600) (throwT "Signed object is too old.")
 
 	-- TODO: refuse objects from A to B too close together
 

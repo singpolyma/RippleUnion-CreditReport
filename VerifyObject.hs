@@ -8,7 +8,7 @@ import Control.Applicative ((*>))
 import Data.Attoparsec.Text (Parser, parseOnly, decimal, string, takeTill, space, endOfLine, endOfInput)
 import Data.Attoparsec.Combinator (choice)
 import Data.Char (isSpace)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LZ
@@ -35,13 +35,15 @@ objectTime (MissedPayment t _) = t
 objectTime (NotTrusted t _) = t
 
 -- | Do OpenPGP verification and extract an object from a message
--- TODO: reject expired/revoked keys
--- TODO: REJECT EXPIRING SIGS!  SIGS LIVE FOREVER!
-verifyObject :: OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Object)
-verifyObject keys msg = listToMaybe $
-	mapMaybe (objectFromVerifiedSig keys) verifiedSigs
+-- TODO: reject revoked keys
+verifyObject :: UTCTime -> OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Object)
+verifyObject time keys msg = listToMaybe $
+	mapMaybe (objectFromVerifiedSig validKeys) verifiedSigs
 	where
-	verifiedSigs = map (OpenPGP.verify keys) (OpenPGP.signatures msg)
+	verifiedSigs = map (OpenPGP.verify validKeys) (OpenPGP.signatures msg)
+	validKeys = OpenPGP.Message $ map fst $
+		filter (maybe True (\e -> e `diffUTCTime` time > 0) . snd)
+			(keyExpirations keys)
 
 -- Given a particular verified signature, extract the object
 objectFromVerifiedSig :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Object)
@@ -81,6 +83,34 @@ expirySubpacket :: OpenPGP.SignatureSubpacket -> Maybe Integer
 expirySubpacket (OpenPGP.SignatureExpirationTimePacket secs) =
 	Just $ fromIntegral secs
 expirySubpacket _ = Nothing
+
+keyExpirySubpacket :: OpenPGP.SignatureSubpacket -> Maybe Integer
+keyExpirySubpacket (OpenPGP.KeyExpirationTimePacket secs) =
+	Just $ fromIntegral secs
+keyExpirySubpacket _ = Nothing
+
+keyExpirations :: OpenPGP.Message -> [(OpenPGP.Packet, Maybe UTCTime)]
+keyExpirations = mapMaybe keyExpirationSignature . OpenPGP.signatures
+
+-- | Assumes key packet
+keyAndExpiryToTime :: (Integral a) => OpenPGP.Packet -> a -> UTCTime
+keyAndExpiryToTime k expiry =
+	posixSecondsToUTCTime $ (realToFrac $ OpenPGP.timestamp k) + (realToFrac expiry)
+
+keyExpirationSignature :: OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Maybe UTCTime)
+keyExpirationSignature (OpenPGP.DataSignature {}) = Nothing
+keyExpirationSignature s
+	| null subpackets = Nothing -- So valid self-signature
+	| otherwise = Just $ maybe (k, Nothing)
+		((,)k . Just . keyAndExpiryToTime k) $
+			listToMaybe $ mapMaybe keyExpirySubpacket subpackets
+	where
+	subpackets = concatMap OpenPGP.hashed_subpackets verifiedSelfSigs
+	verifiedSelfSigs = OpenPGP.signatures_over $
+		OpenPGP.verify (OpenPGP.Message [k]) s
+	k = case s of
+		OpenPGP.SubkeySignature {} -> OpenPGP.subkey s
+		_ -> OpenPGP.topkey s
 
 -- Parse our objects from text
 objectParser :: Parser Object
