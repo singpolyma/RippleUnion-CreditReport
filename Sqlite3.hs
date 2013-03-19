@@ -48,9 +48,6 @@ issuerKeyIds (OpenPGP.Message ((OpenPGP.CompressedDataPacket _ (OpenPGP.Message 
 	issuerKeyIds (OpenPGP.Message (p1 ++ p2))
 issuerKeyIds (OpenPGP.Message pkts) = mapMaybe OpenPGP.signature_issuer pkts
 
-tryFind :: (Monad m) => e -> (a -> Bool) -> [a] -> EitherT e m a
-tryFind e p xs = noteT e $ hoistMaybe $ find p xs
-
 processObject :: Connection -> OpenPGP.Message -> IO (Either String (RippleAddress, Assertion))
 processObject conn msg = runEitherT $ do
 	time <- liftIO $ getCurrentTime
@@ -64,15 +61,15 @@ processObject conn msg = runEitherT $ do
 	when (time `diffUTCTime` at > 3600) (throwT "Signed object is too old.")
 
 	AccountLinesR _ lines <- noteT (show adr ++ " has no credit relationships.") $ MaybeT $ doit adr
-	-- TODO: might have more than one credit relationship
-	line <- tryFind (show adr ++ " has no credit relationship with " ++ show target)
-		((== target) . lineAccount) lines
+	let line = filter ((== target) . lineAccount) lines
+	when (null line) (throwT $ show adr ++ " has no credit relationship with " ++ show target)
+	let isOwed = any ((>0). lineBalance) line
 
 	-- TODO: refuse objects from A to B too close together
 
 	case assertion of
 		MadePayment -> return (adr, obj)
 		Chargeback -> return (adr, obj)
-		MissedPayment | lineBalance line > 0 -> return (adr, obj)
-		NotTrusted | lineBalance line > 0 -> return (adr, obj)
+		MissedPayment | isOwed -> return (adr, obj)
+		NotTrusted | isOwed -> return (adr, obj)
 		_ -> throwT (show target ++ " is not in debt to " ++ show adr)
