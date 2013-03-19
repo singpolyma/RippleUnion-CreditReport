@@ -72,6 +72,7 @@ processObject conn msg = runEitherT $ do
 
 	case obj of
 		MadePayment _ _-> return (adr, obj)
+		Chargeback _ _-> return (adr, obj)
 		MissedPayment _ _ | lineBalance line > 0 -> return (adr, obj)
 		NotTrusted _ _ | lineBalance line > 0 -> return (adr, obj)
 		_ -> throwT (show (objectAddress obj) ++ " is not in debt to " ++ show adr)

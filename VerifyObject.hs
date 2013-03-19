@@ -22,7 +22,8 @@ import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 data Object =
 	MadePayment UTCTime RippleAddress |
 	MissedPayment UTCTime RippleAddress |
-	NotTrusted UTCTime RippleAddress
+	NotTrusted UTCTime RippleAddress |
+	Chargeback UTCTime RippleAddress
 	deriving (Eq, Show)
 
 objectAddress :: Object -> RippleAddress
@@ -141,7 +142,8 @@ objectParser = do
 	cons <- choice [
 			string (T.pack "made a payment") *> return MadePayment,
 			string (T.pack "missed a payment") *> return MissedPayment,
-			string (T.pack "not trusted") *> return NotTrusted
+			string (T.pack "not trusted") *> return NotTrusted,
+			string (T.pack "chargeback") *> return Chargeback
 		]
 	endOfLine
 	endOfInput
