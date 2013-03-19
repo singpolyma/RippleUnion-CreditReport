@@ -3,6 +3,7 @@ module VerifyObject where
 import Control.Monad (void, guard)
 import Control.Error (readMay, hush)
 import Data.Maybe (mapMaybe, listToMaybe)
+import Data.List ((\\))
 import Data.Base58Address (RippleAddress)
 import Control.Applicative ((*>))
 import Data.Attoparsec.Text (Parser, parseOnly, decimal, string, takeTill, space, endOfLine, endOfInput)
@@ -22,7 +23,7 @@ data Object =
 	MadePayment UTCTime RippleAddress |
 	MissedPayment UTCTime RippleAddress |
 	NotTrusted UTCTime RippleAddress
-	deriving (Eq)
+	deriving (Eq, Show)
 
 objectAddress :: Object -> RippleAddress
 objectAddress (MadePayment _ adr) = adr
@@ -35,15 +36,16 @@ objectTime (MissedPayment t _) = t
 objectTime (NotTrusted t _) = t
 
 -- | Do OpenPGP verification and extract an object from a message
--- TODO: reject revoked keys
 verifyObject :: UTCTime -> OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Object)
-verifyObject time keys msg = listToMaybe $
+verifyObject time (OpenPGP.Message keys) msg = listToMaybe $
 	mapMaybe (objectFromVerifiedSig validKeys) verifiedSigs
 	where
 	verifiedSigs = map (OpenPGP.verify validKeys) (OpenPGP.signatures msg)
 	validKeys = OpenPGP.Message $ map fst $
 		filter (maybe True (\e -> e `diffUTCTime` time > 0) . snd)
-			(keyExpirations keys)
+			(keyExpirations unRevoked)
+	unRevoked = OpenPGP.Message (keys \\ revoked)
+	revoked = map fst (keyRevocations (OpenPGP.Message keys))
 
 -- Given a particular verified signature, extract the object
 objectFromVerifiedSig :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Object)
@@ -100,7 +102,7 @@ keyAndExpiryToTime k expiry =
 keyExpirationSignature :: OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Maybe UTCTime)
 keyExpirationSignature (OpenPGP.DataSignature {}) = Nothing
 keyExpirationSignature s
-	| null subpackets = Nothing -- So valid self-signature
+	| null subpackets = Nothing -- No valid self-signature
 	| otherwise = Just $ maybe (k, Nothing)
 		((,)k . Just . keyAndExpiryToTime k) $
 			listToMaybe $ mapMaybe keyExpirySubpacket subpackets
@@ -108,6 +110,20 @@ keyExpirationSignature s
 	subpackets = concatMap OpenPGP.hashed_subpackets verifiedSelfSigs
 	verifiedSelfSigs = OpenPGP.signatures_over $
 		OpenPGP.verify (OpenPGP.Message [k]) s
+	k = case s of
+		OpenPGP.SubkeySignature {} -> OpenPGP.subkey s
+		_ -> OpenPGP.topkey s
+
+keyRevocations :: OpenPGP.Message -> [(OpenPGP.Packet, OpenPGP.Packet)]
+keyRevocations = concatMap keyRevocationSignature . OpenPGP.signatures
+
+-- | Return is [(Key, Signature)]
+keyRevocationSignature :: OpenPGP.SignatureOver -> [(OpenPGP.Packet, OpenPGP.Packet)]
+keyRevocationSignature (OpenPGP.DataSignature {}) = []
+keyRevocationSignature s = map ((,)k) verifiedRevocationSelfSigs
+	where
+	verifiedRevocationSelfSigs = filter ((==0x20) . OpenPGP.signature_type) $
+		OpenPGP.signatures_over $ OpenPGP.verify (OpenPGP.Message [k]) s
 	k = case s of
 		OpenPGP.SubkeySignature {} -> OpenPGP.subkey s
 		_ -> OpenPGP.topkey s
