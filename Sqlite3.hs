@@ -16,7 +16,7 @@ import Control.Monad.Trans (liftIO)
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.ByteString.Lazy as LZ
 
-import VerifyObject
+import Assertion
 import Websocket hiding (readM)
 
 data AddressAndKey = AddressAndKey RippleAddress OpenPGP.Message
@@ -51,28 +51,28 @@ issuerKeyIds (OpenPGP.Message pkts) = mapMaybe OpenPGP.signature_issuer pkts
 tryFind :: (Monad m) => e -> (a -> Bool) -> [a] -> EitherT e m a
 tryFind e p xs = noteT e $ hoistMaybe $ find p xs
 
-processObject :: Connection -> OpenPGP.Message -> IO (Either String (RippleAddress, Object))
+processObject :: Connection -> OpenPGP.Message -> IO (Either String (RippleAddress, Assertion))
 processObject conn msg = runEitherT $ do
 	time <- liftIO $ getCurrentTime
 	r <- liftIO $ findByKeyId conn (issuerKeyIds msg)
-	(adr,obj) <- tryHead "No valid signed object found." $
+	(adr, obj@(assertion, target, at)) <- tryHead "No valid signed object found." $
 		mapMaybe (\(AddressAndKey adr k) ->
-			fmap (first (const adr)) (verifyObject time k msg)
+			fmap (first (const adr)) (verifyAssertion time k msg)
 		) r
 
-	when (objectTime obj > time) (throwT "Signed object claims to be from the future.")
-	when (time `diffUTCTime` objectTime obj > 3600) (throwT "Signed object is too old.")
+	when (at > time) (throwT "Signed object claims to be from the future.")
+	when (time `diffUTCTime` at > 3600) (throwT "Signed object is too old.")
 
 	AccountLinesR _ lines <- noteT (show adr ++ " has no credit relationships.") $ MaybeT $ doit adr
 	-- TODO: might have more than one credit relationship
-	line <- tryFind (show adr ++ " has no credit relationship with " ++ show (objectAddress obj))
-		((== objectAddress obj) . lineAccount) lines
+	line <- tryFind (show adr ++ " has no credit relationship with " ++ show target)
+		((== target) . lineAccount) lines
 
 	-- TODO: refuse objects from A to B too close together
 
-	case obj of
-		MadePayment _ _-> return (adr, obj)
-		Chargeback _ _-> return (adr, obj)
-		MissedPayment _ _ | lineBalance line > 0 -> return (adr, obj)
-		NotTrusted _ _ | lineBalance line > 0 -> return (adr, obj)
-		_ -> throwT (show (objectAddress obj) ++ " is not in debt to " ++ show adr)
+	case assertion of
+		MadePayment -> return (adr, obj)
+		Chargeback -> return (adr, obj)
+		MissedPayment | lineBalance line > 0 -> return (adr, obj)
+		NotTrusted | lineBalance line > 0 -> return (adr, obj)
+		_ -> throwT (show target ++ " is not in debt to " ++ show adr)

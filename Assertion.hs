@@ -1,4 +1,4 @@
-module VerifyObject where
+module Assertion where
 
 import Control.Monad (void, guard)
 import Control.Error (readMay, hush)
@@ -19,27 +19,15 @@ import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 
 -- | Assertions users can make about each other
-data Object =
-	MadePayment UTCTime RippleAddress |
-	MissedPayment UTCTime RippleAddress |
-	NotTrusted UTCTime RippleAddress |
-	Chargeback UTCTime RippleAddress
+data AssertionType = MadePayment | MissedPayment | NotTrusted | Chargeback
 	deriving (Eq, Show)
 
-objectAddress :: Object -> RippleAddress
-objectAddress (MadePayment _ adr) = adr
-objectAddress (MissedPayment _ adr) = adr
-objectAddress (NotTrusted _ adr) = adr
+type Assertion = (AssertionType, RippleAddress, UTCTime)
 
-objectTime :: Object -> UTCTime
-objectTime (MadePayment t _) = t
-objectTime (MissedPayment t _) = t
-objectTime (NotTrusted t _) = t
-
--- | Do OpenPGP verification and extract an object from a message
-verifyObject :: UTCTime -> OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Object)
-verifyObject time (OpenPGP.Message keys) msg = listToMaybe $
-	mapMaybe (objectFromVerifiedSig validKeys) verifiedSigs
+-- | Do OpenPGP verification and extract an assertion from a message
+verifyAssertion :: UTCTime -> OpenPGP.Message -> OpenPGP.Message -> Maybe (OpenPGP.Packet, Assertion)
+verifyAssertion time (OpenPGP.Message keys) msg = listToMaybe $
+	mapMaybe (assertionFromVerifiedSig validKeys) verifiedSigs
 	where
 	verifiedSigs = map (OpenPGP.verify validKeys) (OpenPGP.signatures msg)
 	validKeys = OpenPGP.Message $ map fst $
@@ -48,17 +36,17 @@ verifyObject time (OpenPGP.Message keys) msg = listToMaybe $
 	unRevoked = OpenPGP.Message (keys \\ revoked)
 	revoked = map fst (keyRevocations (OpenPGP.Message keys))
 
--- Given a particular verified signature, extract the object
-objectFromVerifiedSig :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Object)
-objectFromVerifiedSig keys (OpenPGP.DataSignature (OpenPGP.LiteralDataPacket {
+-- Given a particular verified signature, extract the assertion
+assertionFromVerifiedSig :: OpenPGP.Message -> OpenPGP.SignatureOver -> Maybe (OpenPGP.Packet, Assertion)
+assertionFromVerifiedSig keys (OpenPGP.DataSignature (OpenPGP.LiteralDataPacket {
 		OpenPGP.content = bytes
 	}) [sig]) = do
 		guard (signatureExpiry sig == Nothing) -- Reject expiring signatures
 		key <- issuerKey keys sig
 		text <- hush $ T.decodeUtf8' $ BS.concat $ LZ.toChunks $ bytes
-		object <- hush (parseOnly objectParser text)
-		return (key, object)
-objectFromVerifiedSig _ _ = Nothing
+		assertion <- hush (parseOnly assertionParser text)
+		return (key, assertion)
+assertionFromVerifiedSig _ _ = Nothing
 
 -- | Helper to get the key that made a particular signature
 issuerKey :: OpenPGP.Message -> OpenPGP.Packet -> Maybe OpenPGP.Packet
@@ -129,9 +117,9 @@ keyRevocationSignature s = map ((,)k) verifiedRevocationSelfSigs
 		OpenPGP.SubkeySignature {} -> OpenPGP.subkey s
 		_ -> OpenPGP.topkey s
 
--- Parse our objects from text
-objectParser :: Parser Object
-objectParser = do
+-- Parse our assertions from text
+assertionParser :: Parser Assertion
+assertionParser = do
 	time <- fmap (posixSecondsToUTCTime . realToFrac) decimal
 	void $ string (T.pack ": ")
 	adr <- fmap T.unpack $ takeTill isSpace
@@ -139,7 +127,7 @@ objectParser = do
 		Just x -> return x
 		Nothing -> fail $ adr ++ " is not a valid Ripple address."
 	void space
-	cons <- choice [
+	assert <- choice [
 			string (T.pack "made a payment") *> return MadePayment,
 			string (T.pack "missed a payment") *> return MissedPayment,
 			string (T.pack "not trusted") *> return NotTrusted,
@@ -147,4 +135,4 @@ objectParser = do
 		]
 	endOfLine
 	endOfInput
-	return $ cons time decodedAdr
+	return $ (assert, decodedAdr, time)
