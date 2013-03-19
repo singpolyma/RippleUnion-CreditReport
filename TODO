@@ -1,1 +1,8 @@
-user sigining a UserID is not strong enough.  Encrypt them a random number < 1 and have them ripple that amount of XRP, then whatever address ripples us that amount is their address.  This cannot be verified by others, but others can verify the key whatever way they want, all this does is let us assert on the website that the key is beloning to a certain address.
+thread A that just waits on websocket for messages
+	If it's not a sort we understand, ignore it
+
+thread B that gets signaled by thread A on new message and also takes requests to be sent out
+	If it's a transaction, are we waiting for this one to auth someone?
+		If yes, then switch their status
+	If it's a response we're waiting for, send it back
+	Else, ignore it
