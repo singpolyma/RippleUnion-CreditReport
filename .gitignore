@@ -3,6 +3,11 @@
 *.swp*
 *.orig
 *.rej
+Main
+MustacheTemplates.hs
+PathPieces.hs
+Routes.hs
+dev.db
 tests/suite
 dist/*
 report.html
