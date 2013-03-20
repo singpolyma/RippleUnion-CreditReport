@@ -7,9 +7,8 @@ thread B that gets signaled by thread A on new message and also takes requests t
 	If it's a response we're waiting for, send it back
 	Else, ignore it
 
-
-Assertion should get a real datatype so it can have instances of FromRow and ToRow.  It should carry around the blob.  We store normalized data from the blob in the DB for aggregation and sorting, but might as well use it for display.  Split out parser for assertion words so we can use it in this context?
+AssertionRow probably also needs ToRow.  We store normalized data from the blob in the DB for aggregation and sorting, and so might as well use it for display.  INVESTIGATE HOW UTCTIME IS STORED IN DB!
 
 Need JSON outputs also, just derive ToJSON for the record I expect.  Include blobs in the JSON?
 
-NO SEQUENTIAL IDS!  What to make permalinks for blobs?  address/timestamp?  We probably want to reject dupes there anyway?  Start with that, I think.
+NO SEQUENTIAL IDS! data: URIs?  Hashes?

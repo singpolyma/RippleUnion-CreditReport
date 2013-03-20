@@ -20,7 +20,18 @@ import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 
 -- | Assertions users can make about each other
 data AssertionType = MadePayment | MissedPayment | NotTrusted | Chargeback
-	deriving (Eq, Show)
+	deriving (Eq)
+
+instance Show AssertionType where
+	show MadePayment = "made a payment"
+	show MissedPayment = "missed a payment"
+	show NotTrusted = "not trusted"
+	show Chargeback = "chargeback"
+
+instance Read AssertionType where
+	readsPrec _ s = case parseOnly assertionTypeParser (T.pack s) of
+		Left _ -> []
+		Right x -> [(x, "")]
 
 type Assertion = (AssertionType, RippleAddress, UTCTime)
 
@@ -127,12 +138,15 @@ assertionParser = do
 		Just x -> return x
 		Nothing -> fail $ adr ++ " is not a valid Ripple address."
 	void space
-	assert <- choice [
-			string (T.pack "made a payment") *> return MadePayment,
-			string (T.pack "missed a payment") *> return MissedPayment,
-			string (T.pack "not trusted") *> return NotTrusted,
-			string (T.pack "chargeback") *> return Chargeback
-		]
+	assert <- assertionTypeParser
 	endOfLine
 	endOfInput
 	return $ (assert, decodedAdr, time)
+
+assertionTypeParser :: Parser AssertionType
+assertionTypeParser = choice [
+		string (T.pack "made a payment") *> return MadePayment,
+		string (T.pack "missed a payment") *> return MissedPayment,
+		string (T.pack "not trusted") *> return NotTrusted,
+		string (T.pack "chargeback") *> return Chargeback
+	]
