@@ -7,7 +7,7 @@ thread B that gets signaled by thread A on new message and also takes requests t
 	If it's a response we're waiting for, send it back
 	Else, ignore it
 
-AssertionRow probably also needs ToRow.  We store normalized data from the blob in the DB for aggregation and sorting, and so might as well use it for display.  INVESTIGATE HOW UTCTIME IS STORED IN DB!
+NEEDS TO BE A REC IN Records.hs YOU FOOL! AssertionRow probably also needs ToRow.  We store normalized data from the blob in the DB for aggregation and sorting, and so might as well use it for display.  INVESTIGATE HOW UTCTIME IS STORED IN DB!
 
 Need JSON outputs also, just derive ToJSON for the record I expect.  Include blobs in the JSON?
 
