@@ -34,7 +34,7 @@ responseTextBuilder s h = ResponseBuilder s h . Blaze.fromLazyText . TL.toLazyTe
 on404 :: Application
 on404 _ = string notFound404 [] "Not Found"
 
-reportFor :: RippleAddress -> Application
-reportFor adr req = return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr)
+reportFor :: Connection -> RippleAddress -> Application
+reportFor db adr req = return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr)
 	where
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]

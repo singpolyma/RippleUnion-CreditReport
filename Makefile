@@ -2,10 +2,10 @@ Main: Main.hs Application.hs Routes.hs MustacheTemplates.hs
 	ghc -Wall -fno-warn-name-shadowing Main.hs
 
 Routes.hs: routes
-	routeGenerator -r -m Application -n 0 $< > $@
+	routeGenerator -r -m Application -n 1 $< > $@
 
 PathHelpers.hs: routes
-	routeGenerator -p -n 0 $< > $@
+	routeGenerator -p -n 1 $< > $@
 
 MustacheTemplates.hs: Records.hs view/report.mustache
 	mustache2hs -m Records.hs view/report.mustache Report > $@
