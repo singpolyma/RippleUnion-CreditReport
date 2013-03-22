@@ -23,9 +23,6 @@ instance PathPiece RippleAddress where
 	fromPathPiece = readMay . T.unpack
 	toPathPiece = T.pack . show
 
-instance ToField RippleAddress where
-	toField adr = toField (show adr)
-
 htmlEscape :: String -> String
 htmlEscape = concatMap escChar
 	where
@@ -43,7 +40,7 @@ on404 _ = string notFound404 [] "Not Found"
 
 reportFor :: Connection -> RippleAddress -> Application
 reportFor db adr req = do
-		assertions <- liftIO $ query db (fromString "SELECT `to`, `from`, `type`, `time`, `signed` FROM assertions WHERE `to` = ?") [adr]
+		assertions <- liftIO $ query db (fromString "SELECT `from`, `fromFingerprint`, `to`, `at`, `asserted`, `assertion` FROM assertions WHERE `to` = ?") [adr]
 		return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr assertions)
 	where
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]

@@ -25,14 +25,6 @@ data AddressAndKey = AddressAndKey RippleAddress OpenPGP.Message
 instance FromRow AddressAndKey where
 	fromRow = AddressAndKey <$> (field >>= readM) <*> (field >>= decodeM)
 
-data AssertionRow = AssertionRow RippleAddress Assertion OpenPGP.Message
-	deriving (Show, Eq)
-
-instance FromRow AssertionRow where
-	fromRow  = AssertionRow <$> (field >>= readM)
-		<*> ((,,) <$> (field >>= readM) <*> (field >>= readM) <*> field)
-		<*> (field >>= decodeM)
-
 decodeM :: (Binary a, Monad m) => LZ.ByteString -> m a
 decodeM bytes = case decodeOrFail bytes of
 	Left (_,_,e) -> fail e
