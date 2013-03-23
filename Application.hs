@@ -50,9 +50,6 @@ htmlEscape = concatMap escChar
 responseTextBuilder :: Status -> ResponseHeaders -> TL.Builder -> Response
 responseTextBuilder s h = ResponseBuilder s h . Blaze.fromLazyText . TL.toLazyText
 
-on404 :: Application
-on404 _ = string notFound404 [] "Not Found"
-
 home :: URI -> Connection -> Application
 home root db req =
 	return $ responseTextBuilder ok200 headers (viewHome htmlEscape $ HomeRec [Form $ forPath `relativeTo` root])

@@ -4,46 +4,14 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>Ripple Union Credit Report for {{address}}</title>
 
+		<link rel="stylesheet" type="text/css" href="/assets/common.css" />
 		<style type="text/css">
-			html, body {
-				background-color: #abcdef;
-				font-family: "Liberation Sans", sans-serif;
-			}
-
-			body {
-				margin-left: 10%;
-				margin-right: 10%;
-				margin-top: 2em;
-			}
-
-			body > h1 {
-				overflow: hidden;
-			}
-
-			h1 * {
-				vertical-align: middle;
-			}
-
-			h1 img {
-				float: left;
-				padding-right: 5em;
-			}
-
-			.rippleAddress {
-				font-size: 0.5em;
-			}
-
-			a[rel=enclosure] img {
-				position: relative;
-				top: 4px;
-			}
-
 			input { display: block; }
 		</style>
 	</head>
 
 	<body>
-		<h1><img src="/logo.png" alt="Ripple Union" /> Credit Report for <span class="rippleAddress">{{address}}</span></h1>
+		<h1><img src="/assets/logo.png" alt="Ripple Union" /> Credit Report for <span class="rippleAddress">{{address}}</span></h1>
 
 		<section>
 			<h1>Assertions</h1>
@@ -51,7 +19,7 @@
 			<ul>
 			{{#assertions}}
 				<li>
-					<a href="data:application/pgp-encrypted;base64,{{signedAssertion}}" rel="enclosure"><img src="http://www.famfamfam.com/lab/icons/mini/icons/arrow_down.gif" alt="download signed assertion" title="download signed assertion" /></a>
+					<a href="data:application/pgp-encrypted;base64,{{signedAssertion}}" rel="enclosure"><img src="/assets/arrow_down.gif" alt="download signed assertion" title="download signed assertion" /></a>
 
 					<time datetime="{{at8601}}">{{atHuman}}</time> —
 					<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&amp;search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
