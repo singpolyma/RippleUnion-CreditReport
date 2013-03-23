@@ -14,6 +14,9 @@ import System.Locale (defaultTimeLocale)
 import qualified Data.ByteString.Lazy as LZ
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
+import qualified Data.Aeson as Aeson
+import qualified Data.Text as T
+import qualified Data.ByteString.Base64.Lazy as B64
 
 import Assertion
 
@@ -32,17 +35,29 @@ data Report = Report {
 	}
 	deriving (Show, Eq)
 
+instance Aeson.ToJSON Report where
+	toJSON (Report adr asserts) = Aeson.object [
+			(Aeson..=) (T.pack "for") (T.pack $ show adr),
+			(Aeson..=) (T.pack "assertions") asserts
+		]
+
 data FormattedAssertionRow = FormattedAssertionRow {
 		at8601 :: String,
 		atHuman :: String,
 		keyId :: String,
+		signedAssertion :: String,
 		row :: [AssertionRow]
 	}
 	deriving (Show, Eq)
 
+instance Aeson.ToJSON FormattedAssertionRow where
+	toJSON = Aeson.toJSON . head . row
+
 formatAssertionRow :: AssertionRow -> FormattedAssertionRow
-formatAssertionRow row = FormattedAssertionRow iso8601 human keyId [row]
+formatAssertionRow row =
+	FormattedAssertionRow iso8601 human keyId signed [row]
 	where
+	signed = map (toEnum.fromEnum) $ LZ.unpack $ B64.encode $ encode $ assertion row
 	keyId = reverse $ take 8 $ reverse $ fromFingerprint row
 	iso8601 = formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" (at row)
 	human = formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (at row)
@@ -56,6 +71,14 @@ data AssertionRow = AssertionRow {
 		assertion :: OpenPGP.Message
 	}
 	deriving (Show, Eq)
+
+instance Aeson.ToJSON AssertionRow where
+	toJSON (AssertionRow from _ _ at asserted assertion) = Aeson.object [
+			(Aeson..=) (T.pack "from") (B64.encode $ encode from),
+			(Aeson..=) (T.pack "at") at,
+			(Aeson..=) (T.pack "asserted") (show asserted),
+			(Aeson..=) (T.pack "signedAssertion") (B64.encode $ encode assertion)
+		]
 
 instance FromRow FormattedAssertionRow where
 	fromRow = fmap formatAssertionRow fromRow

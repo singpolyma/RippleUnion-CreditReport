@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
+		<base href="http://rippleunion.com/" />
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>Ripple Union Credit Report for {{address}}</title>
 
@@ -32,17 +33,24 @@
 			.rippleAddress {
 				font-size: 0.5em;
 			}
+
+			a[rel=enclosure] img {
+				position: relative;
+				top: 4px;
+			}
 		</style>
 	</head>
 
 	<body>
-		<h1><img src="http://rippleunion.com/logo.png" alt="Ripple Union" /> Credit Report for <span class="rippleAddress">{{address}}</span></h1>
+		<h1><img src="/logo.png" alt="Ripple Union" /> Credit Report for <span class="rippleAddress">{{address}}</span></h1>
 
 		<ul>
 		{{#assertions}}
 			<li>
+				<a href="data:application/pgp-encrypted;base64,{{signedAssertion}}" rel="enclosure"><img src="http://www.famfamfam.com/lab/icons/mini/icons/arrow_down.gif" alt="download signed assertion" title="download signed assertion" /></a>
+
 				<time datetime="{{at8601}}">{{atHuman}}</time> —
-				<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
+				<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&amp;search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
 				asserted that this address
 				{{#row}}
 					{{asserted}}
