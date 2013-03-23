@@ -1,14 +1,1 @@
-thread A that just waits on websocket for messages
-	If it's not a sort we understand, ignore it
-
-thread B that gets signaled by thread A on new message and also takes requests to be sent out
-	If it's a transaction, are we waiting for this one to auth someone?
-		If yes, then switch their status
-	If it's a response we're waiting for, send it back
-	Else, ignore it
-
-NEEDS TO BE A REC IN Records.hs YOU FOOL! AssertionRow probably also needs ToRow.  We store normalized data from the blob in the DB for aggregation and sorting, and so might as well use it for display.  INVESTIGATE HOW UTCTIME IS STORED IN DB!
-
-Need JSON outputs also, just derive ToJSON for the record I expect.  Include blobs in the JSON?
-
-NO SEQUENTIAL IDS! data: URIs?  Hashes?
+SIGNING SUBKEYS

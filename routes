@@ -1,1 +1,3 @@
 GET /for/: => reportFor
+GET /for/:/submit => submitFor
+POST /for/: => assertFor

@@ -5,7 +5,7 @@
 *.rej
 Main
 MustacheTemplates.hs
-PathPieces.hs
+PathHelpers.hs
 Routes.hs
 dev.db
 tests/suite

@@ -11,6 +11,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Binary (Binary, decodeOrFail, encode)
 import Data.Time.Format (formatTime)
 import System.Locale (defaultTimeLocale)
+import Network.URI (URI(..))
 import qualified Data.ByteString.Lazy as LZ
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
@@ -26,8 +27,17 @@ instance TL.Buildable RippleAddress where
 instance TL.Buildable AssertionType where
 	build = TL.build . TL.Shown
 
+instance TL.Buildable URI where
+	build = TL.build . TL.Shown
+
 instance ToField RippleAddress where
 	toField adr = toField (show adr)
+
+data SubmitForm = SubmitForm {
+		formAddress :: RippleAddress,
+		formAction :: URI
+	}
+	deriving (Show, Eq)
 
 data Report = Report {
 		address :: RippleAddress,
