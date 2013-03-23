@@ -3,12 +3,11 @@ module Application where
 
 import Data.List (intercalate)
 import Data.String (fromString)
-import Data.Maybe (fromMaybe, maybe)
-import Network.HTTP.Accept (selectAcceptType)
-import Network.Wai.Parse (parseRequestBody, parseHttpAccept, getRequestBodyType, parseRequestBody, RequestBodyType(..), lbsBackEnd, fileContent)
+import Data.Maybe (fromMaybe)
+import Network.Wai.Parse (parseRequestBody, getRequestBodyType, parseRequestBody, RequestBodyType(..), lbsBackEnd, fileContent)
 import Network.Wai (Request(..), Response(..), Application)
-import Network.HTTP.Types (ok200, seeOther303, badRequest400, notAcceptable406, Status, ResponseHeaders)
-import Network.Wai.Util (string, stringHeaders, json, bodyBytestring, redirect')
+import Network.HTTP.Types (ok200, seeOther303, badRequest400, Status, ResponseHeaders)
+import Network.Wai.Util (string, stringHeaders, json, bodyBytestring, redirect', handleAcceptTypes)
 import Web.PathPieces (PathPiece(..))
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Base58Address (RippleAddress)
@@ -70,21 +69,16 @@ reportFor _ db adr req = case gen of
 		string ok200 disp (show time ++ ": " ++ show adr ++ " " ++ T.unpack x)
 	Nothing -> do
 		assertions <- liftIO $ query db (fromString "SELECT `from`, `fromFingerprint`, `to`, `at`, `asserted`, `assertion` FROM assertions WHERE `to` = ?") [adr]
-		case acceptType of
-			"text/html" ->
-				return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr assertions)
-			"application/json" ->
-				json ok200 [] (Report adr assertions)
-			_ -> string notAcceptable406 [] (intercalate "\n" supportedTypes)
+		handleAcceptTypes [
+			("text/html",
+				return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr assertions)),
+			("application/json",
+				json ok200 [] (Report adr assertions))
+			] req
 	where
 	gen = fmap (T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "newAssertion") (queryString req)
-
 	Just disp = stringHeaders [("Content-Disposition", "attachment; filename=assertion.txt")]
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]
-	acceptType = fromMaybe (head supportedTypes) acceptType'
-	acceptType' = (selectAcceptType supportedTypes . parseHttpAccept) =<<
-		lookup (fromString "Accept") (requestHeaders req)
-	supportedTypes = ["text/html", "application/json"]
 
 assertFor :: URI -> Connection -> RippleAddress -> Application
 assertFor root db adr req = do
@@ -98,26 +92,26 @@ assertFor root db adr req = do
 		Left _ -> return $ Left "Post data is not a valid OpenPGP message."
 		Right (_,_,x) -> insertVerifiedAssertion db x
 
-	case acceptType of
-		"text/html" ->
-			case result of
-				Left e -> string badRequest400 [] (e ++ "\n")
-				Right () -> redirect' seeOther303 [] (reportForPath adr `relativeTo` root)
-		"text/plain" ->
-			case result of
-				Left e -> string badRequest400 [] (e ++ "\n")
-				Right () -> string ok200 [] "success"
-		"application/json" ->
-			case result of
-				Left e -> json ok200 [] (Aeson.object [
-						(Aeson..=) (T.pack "error") (Aeson.toJSON e)
-					])
-				Right () -> json ok200 [] (Aeson.object [
-						(Aeson..=) (T.pack "status") "success"
-					])
-		_ -> string notAcceptable406 [] (intercalate "\n" supportedTypes)
+	case result of
+		Left e -> handleAcceptTypes (errResp e) req
+		Right () -> handleAcceptTypes resp req
 	where
-	acceptType = fromMaybe (head supportedTypes) acceptType'
-	acceptType' = (selectAcceptType supportedTypes . parseHttpAccept) =<<
-		lookup (fromString "Accept") (requestHeaders req)
-	supportedTypes = ["text/html", "text/plain", "application/json"]
+	errText e = string badRequest400 [] (e ++ "\n")
+
+	errResp e = [
+		("text/plain", errText e),
+		("application/json",
+			json ok200 [] (Aeson.object [
+				(Aeson..=) (T.pack "error") (Aeson.toJSON e)
+			]))
+		]
+
+	resp = [
+		("text/html",
+			redirect' seeOther303 [] (reportForPath adr `relativeTo` root)),
+		("text/plain", string ok200 [] "success"),
+		("application/json",
+			json ok200 [] (Aeson.object [
+				(Aeson..=) (T.pack "status") "success"
+			]))
+		]
