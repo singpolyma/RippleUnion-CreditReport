@@ -23,6 +23,9 @@
 
 					<time datetime="{{at8601}}">{{atHuman}}</time> —
 					<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&amp;search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
+					{{#otcNick}}
+						[<a href="http://bitcoin-otc.com/viewratingdetail.php?nick={{otcNick}}&amp;sign=ANY&amp;type=RECV">otc</a>]
+					{{/otcNick}}
 					asserted that this address
 					{{#row}}
 						{{asserted}}

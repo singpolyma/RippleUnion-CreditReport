@@ -61,6 +61,7 @@ data FormattedAssertionRow = FormattedAssertionRow {
 		atHuman :: String,
 		keyId :: String,
 		signedAssertion :: String,
+		otcNick :: Maybe String,
 		row :: [AssertionRow]
 	}
 	deriving (Show, Eq)
@@ -70,7 +71,7 @@ instance Aeson.ToJSON FormattedAssertionRow where
 
 formatAssertionRow :: AssertionRow -> FormattedAssertionRow
 formatAssertionRow row =
-	FormattedAssertionRow iso8601 human keyId signed [row]
+	FormattedAssertionRow iso8601 human keyId signed Nothing [row]
 	where
 	signed = map (toEnum.fromEnum) $ LZ.unpack $ B64.encode $ encode $ assertion row
 	keyId = reverse $ take 8 $ reverse $ fromFingerprint row

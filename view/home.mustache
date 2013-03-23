@@ -9,6 +9,13 @@
 	<body>
 		<h1><img src="/assets/logo.png" alt="Ripple Union" /> Credit Reports</h1>
 
+		{{#forForm}}
+			<form method="get" action="{{formAction}}">
+				<input type="text" name="address" placeholder="Ripple.com address" />
+				<input type="submit" value="View Report" />
+			</form>
+		{{/forForm}}
+
 		<p>This credit reporting system is designed to give support to Ripple.com organizations and users who want to extend credit to other users.  Every time a user to whom you have extended credit makes a payment on that credit, you may submit an OpenPGP signed message saying:</p>
 
 		<blockquote>&lt;unix timestamp of transaction&gt;: &lt;Ripple.com address of user&gt; made a payment</blockquote>
@@ -21,11 +28,6 @@
 
 		<p><strong>Do not blindly trust assertions</strong>.  Verify the identity of the key that made the assertion.  Do you trust this person or organization?  If you don't know who it is, ask around in the community.  If you want to tie your OpenPGP key to your community identity, you might consider <a href="https://ripple.com/forum/viewtopic.php?f=1&amp;t=1617">this forum thread</a>.</p>
 
-		{{#forForm}}
-			<form method="get" action="{{formAction}}">
-				<input type="text" name="address" placeholder="Ripple.com address" />
-				<input type="submit" value="View Report" />
-			</form>
-		{{/forForm}}
+		<p>Do you accept payments through an automated system?  Want an API?  No problem. Request JSON or JSONP from a report page to get a machine-readable report.  Put a signed assertion in the body of a POST to any report URI to add an assertion to that URI, errors can be returned as text or JSON.</p>
 	</body>
 </html>

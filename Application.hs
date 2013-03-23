@@ -29,6 +29,7 @@ import qualified Data.ByteString as BS
 import Records
 import MustacheTemplates
 import Sqlite3
+import OTC
 #include "PathHelpers.hs"
 
 -- Orphan instances, do not import this module!
@@ -70,13 +71,17 @@ reportFor _ db adr req = case gen of
 		string ok200 disp (show time ++ ": " ++ show adr ++ " " ++ T.unpack x ++ "\n")
 	Nothing -> do
 		assertions <- liftIO $ query db (fromString "SELECT `from`, `fromFingerprint`, `to`, `at`, `asserted`, `assertion` FROM assertions WHERE `to` = ?") [adr]
+		otc <- liftIO $ otcKeys
+		let assertions' = map (\x -> x {otcNick = lookup (fFpr x) otc}) assertions
 		handleAcceptTypes [
 			("text/html",
-				return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr assertions)),
+				return $ responseTextBuilder ok200 headers (viewReport htmlEscape $ Report adr assertions')),
 			("application/json",
-				json ok200 [] (Report adr assertions))
+				json ok200 [] (Report adr assertions'))
 			] req
 	where
+	fFpr (FormattedAssertionRow { row = [AssertionRow {fromFingerprint = fpr}] }) = fpr
+	fFpr _ = ""
 	gen = fmap (T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "newAssertion") (queryString req)
 	Just disp = stringHeaders [("Content-Disposition", "attachment; filename=assertion.txt")]
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]
