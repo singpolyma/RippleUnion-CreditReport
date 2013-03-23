@@ -49,7 +49,11 @@
 
 		<p>If you have an agreement that payments should be made, and a user does not uphold this agreement, the format is the same as above but you say "missed a payment".  If the user makes a payment, but then executes a chargeback (if you have, say, agreed to PayPal payments), you say "chargeback".  If a user consistently behaves in an untrustworthy manner, say "not trusted".  There are links on individual report pages to messages of the various types that you can simply download, sign with your OpenPGP key, and then upload again using the submit form for that address.</p>
 
-	<p>Note: <strong>signing subkeys are not supported</strong>.  This is a technical limitation we hope will be lifted soon.</p>
+		<p>Note: <strong>signing subkeys are not supported</strong>.  This is a technical limitation we hope will be lifted soon.</p>
+
+		<p>Submitted assertions <em>must</em> be valid, non-expiring OpenPGP signatures made my a valid key.  We get keys from the public keyservers.  If you key is not on the public keyservers, you can <a href="http://singpolyma.net:11371/">submit it</a>.</p>
+
+		<p><strong>Do not blindly trust assertions</strong>.  Verify the identity of the key that made the assertion.  Do you trust this person or organization?  If you don't know who it is, ask around in the community.  If you want to tie your OpenPGP key to your community identity, you might consider <a href="https://ripple.com/forum/viewtopic.php?f=1&amp;t=1617">this forum thread</a>.</p>
 
 		{{#forForm}}
 			<form method="get" action="{{formAction}}">
