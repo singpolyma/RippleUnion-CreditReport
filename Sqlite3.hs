@@ -1,22 +1,14 @@
 module Sqlite3 where
 
-import Control.Applicative
 import Data.String (fromString)
 import Control.Monad (when)
-import Data.List (find)
-import Control.Arrow (first)
-import Data.Maybe (listToMaybe, mapMaybe)
-import Data.String (fromString)
+import Data.Maybe (mapMaybe)
 import Data.Time.Clock (getCurrentTime, diffUTCTime, addUTCTime)
-import Control.Error (readMay, hush, tryHead, noteT, EitherT(..), MaybeT(..), hoistMaybe, throwT, headMay)
-import Data.Base58Address (RippleAddress)
-import Database.SQLite.Simple (query, field, FromRow(..), Connection, execute)
-import Data.Binary (Binary, decodeOrFail)
-import Control.Exception (try)
+import Control.Error (noteT, EitherT(..), MaybeT(..), hoistMaybe, throwT, headMay)
+import Database.SQLite.Simple (Connection, query, execute)
 import Control.Monad.Trans (liftIO)
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
-import qualified Data.ByteString.Lazy as LZ
 
 import Keyserver
 import Records
@@ -31,7 +23,7 @@ extractVerifiedAssertion :: OpenPGP.Message -> IO (Either String (OpenPGP.Packet
 extractVerifiedAssertion msg = runEitherT $ do
 	time <- liftIO $ getCurrentTime
 	k <- noteT "Keyserver fetch failed." $ (MaybeT . fetchKey) =<< (hoistMaybe $ headMay (issuerKeyIds msg))
-	(adr, obj@(assertion, target, at)) <- noteT "No valid signed object found." $ hoistMaybe $
+	(adr, obj@(_, _, at)) <- noteT "No valid signed object found." $ hoistMaybe $
 		verifyAssertion time k msg
 
 	when (at > time) (throwT "Signed object claims to be from the future.")

@@ -7,16 +7,15 @@ import Data.Maybe (fromMaybe)
 import Network.HTTP.Accept (selectAcceptType)
 import Network.Wai.Parse (parseRequestBody, parseHttpAccept, getRequestBodyType, parseRequestBody, RequestBodyType(..), lbsBackEnd, fileContent)
 import Network.Wai (Request(..), Response(..), Application)
-import Network.HTTP.Types (ok200, notFound404, seeOther303, badRequest400, notAcceptable406, Status, ResponseHeaders)
+import Network.HTTP.Types (ok200, seeOther303, badRequest400, notAcceptable406, Status, ResponseHeaders)
 import Network.Wai.Util (string, stringHeaders, json, bodyBytestring, redirect')
 import Web.PathPieces (PathPiece(..))
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Base58Address (RippleAddress)
 import Control.Error (readMay, headMay)
 import Control.Monad.Trans (liftIO)
-import Database.SQLite.Simple (query, field, FromRow(..), Connection, open, close, query_)
-import Database.SQLite.Simple.ToField (ToField(..))
-import Data.Binary (Binary, decodeOrFail)
+import Database.SQLite.Simple (Connection, query)
+import Data.Binary (decodeOrFail)
 import Network.URI (URI(..))
 import Network.URI.Partial (relativeTo)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Blaze
@@ -51,7 +50,7 @@ responseTextBuilder :: Status -> ResponseHeaders -> TL.Builder -> Response
 responseTextBuilder s h = ResponseBuilder s h . Blaze.fromLazyText . TL.toLazyText
 
 home :: URI -> Connection -> Application
-home root db req =
+home root _ _ =
 	return $ responseTextBuilder ok200 headers (viewHome htmlEscape $ HomeRec [Form $ forPath `relativeTo` root])
 	where
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]
@@ -65,7 +64,7 @@ for root _ req = case adr of
 	adrS = fmap (T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "address") (queryString req)
 
 reportFor :: URI -> Connection -> RippleAddress -> Application
-reportFor root db adr req = case gen of
+reportFor _ db adr req = case gen of
 	Just x -> do
 		time <- liftIO (fmap floor getPOSIXTime :: IO Integer)
 		string ok200 disp (show time ++ ": " ++ show adr ++ " " ++ T.unpack x)

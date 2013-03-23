@@ -1,26 +1,27 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Records where
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Error (readMay, hush, tryHead, noteT, EitherT(..), MaybeT(..), hoistMaybe, throwT)
 import Data.Base58Address (RippleAddress)
 import qualified Data.Text.Buildable as TL
 import qualified Data.Text.Format.Types as TL
-import Database.SQLite.Simple (query, field, FromRow(..), ToRow(..))
+import Database.SQLite.Simple (field, FromRow(..), ToRow(..))
 import Database.SQLite.Simple.ToField (ToField(..))
 import Data.Time.Clock (UTCTime)
-import Data.Binary (Binary, decodeOrFail, encode)
+import Data.Binary (encode)
 import Data.Time.Format (formatTime)
 import System.Locale (defaultTimeLocale)
 import Network.URI (URI(..))
 import qualified Data.ByteString.Lazy as LZ
 import qualified Data.OpenPGP as OpenPGP
-import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 import qualified Data.Aeson as Aeson
 import qualified Data.Text as T
 import qualified Data.ByteString.Base64.Lazy as B64
 
 import Assertion
+import Util
 
+-- Orphan instances, do not import this module
 instance TL.Buildable RippleAddress where
 	build = TL.build . TL.Shown
 
@@ -111,14 +112,3 @@ instance ToRow AssertionRow where
 			toField . show . asserted,
 			toField . encode . assertion
 		]
-
-decodeM :: (Binary a, Monad m) => LZ.ByteString -> m a
-decodeM bytes = case decodeOrFail bytes of
-	Left (_,_,e) -> fail e
-	Right (_,_,x) -> return x
-
--- | Signal read errors in some Monad (for parsing)
-readM :: (Read r, Monad m) => String -> m r
-readM s = case readMay s of
-	Just x -> return x
-	Nothing -> fail $ s ++ " is invalid"
