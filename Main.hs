@@ -36,10 +36,12 @@ main = do
 	let root = fmap addTrailingSlash (parseAbsoluteURI =<< headMay args)
 	main' root args
 	where
-	main' (Just root@(URI {uriAuthority = Just _})) (_:dbpth:_) = do
+	main' (Just root@(URI {uriAuthority = Just _})) (_:dbpth:port:_) = do
 		cwd <- getWorkingDirectory
 		void $ withConnection dbpth
-			(run 3000 .
+			(run (read port) .
 				logStdoutDev . autohead . acceptOverride . jsonp . -- Middleware
 				dispatch (staticRoot cwd) . routes root)           -- Do routing
-	main' _ _ = err "Usage: ./Main <Root URI> <DB path>"
+	main' root@(Just (URI {uriAuthority = Just _})) (_:dbpth:_) =
+		main' root [dbpth, "3000"]
+	main' _ _ = err "Usage: ./Main <Root URI> <DB path> <port>"
