@@ -18,9 +18,6 @@ import qualified Data.Text.Encoding as T
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 
-import Debug.Trace
-traceAlong x = traceShow x x
-
 -- | Assertions users can make about each other
 data AssertionType = MadePayment | MissedPayment | NotTrusted | Chargeback
 	deriving (Eq)
