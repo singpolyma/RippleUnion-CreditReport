@@ -15,14 +15,14 @@ import Records
 import Assertion
 
 issuerKeyIds :: OpenPGP.Message -> [String]
-issuerKeyIds (OpenPGP.Message ((OpenPGP.CompressedDataPacket _ (OpenPGP.Message p1)):p2)) =
+issuerKeyIds (OpenPGP.Message (OpenPGP.CompressedDataPacket _ (OpenPGP.Message p1) : p2)) =
 	issuerKeyIds (OpenPGP.Message (p1 ++ p2))
 issuerKeyIds (OpenPGP.Message pkts) = mapMaybe OpenPGP.signature_issuer pkts
 
 extractVerifiedAssertion :: OpenPGP.Message -> IO (Either String (OpenPGP.Packet, OpenPGP.Message, Assertion))
 extractVerifiedAssertion msg = runEitherT $ do
-	time <- liftIO $ getCurrentTime
-	k <- noteT "Keyserver fetch failed." $ (MaybeT . fetchKey) =<< (hoistMaybe $ headMay (issuerKeyIds msg))
+	time <- liftIO getCurrentTime
+	k <- noteT "Keyserver fetch failed." $ (MaybeT . fetchKey) =<< hoistMaybe (headMay (issuerKeyIds msg))
 	(adr, obj@(_, _, at)) <- noteT "No valid signed object found." $ hoistMaybe $
 		verifyAssertion time k msg
 

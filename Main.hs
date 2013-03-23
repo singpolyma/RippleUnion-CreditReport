@@ -39,7 +39,7 @@ main = do
 	main' (Just root@(URI {uriAuthority = Just _})) (_:dbpth:_) = do
 		cwd <- getWorkingDirectory
 		void $ withConnection dbpth
-			(\db -> run 3000 $
-				logStdoutDev $ autohead $ acceptOverride $ jsonp $ -- Middleware
-				dispatch (staticRoot cwd) $ routes root db)        -- Do routing
+			(run 3000 .
+				logStdoutDev . autohead . acceptOverride . jsonp . -- Middleware
+				dispatch (staticRoot cwd) . routes root)           -- Do routing
 	main' _ _ = err "Usage: ./Main <Root URI> <DB path>"

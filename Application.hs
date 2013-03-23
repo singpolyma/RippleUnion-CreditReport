@@ -3,7 +3,7 @@ module Application where
 
 import Data.List (intercalate)
 import Data.String (fromString)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybe)
 import Network.HTTP.Accept (selectAcceptType)
 import Network.Wai.Parse (parseRequestBody, parseHttpAccept, getRequestBodyType, parseRequestBody, RequestBodyType(..), lbsBackEnd, fileContent)
 import Network.Wai (Request(..), Response(..), Application)
@@ -91,7 +91,7 @@ assertFor root db adr req = do
 	-- TODO: force adr to be the address of the object
 
 	body <- case getRequestBodyType req of
-		Just (Multipart _) -> fmap (fromMaybe LZ.empty . fmap (fileContent . snd) . headMay . snd) (parseRequestBody lbsBackEnd req)
+		Just (Multipart _) -> fmap (maybe LZ.empty (fileContent . snd) . headMay . snd) (parseRequestBody lbsBackEnd req)
 		_ -> fmap (LZ.fromChunks . (:[])) (bodyBytestring req)
 
 	result <- liftIO $ case decodeOrFail body of
@@ -113,7 +113,7 @@ assertFor root db adr req = do
 						(Aeson..=) (T.pack "error") (Aeson.toJSON e)
 					])
 				Right () -> json ok200 [] (Aeson.object [
-						(Aeson..=) (T.pack "status") ("success")
+						(Aeson..=) (T.pack "status") "success"
 					])
 		_ -> string notAcceptable406 [] (intercalate "\n" supportedTypes)
 	where

@@ -1,4 +1,4 @@
-Main: Main.hs Application.hs Routes.hs MustacheTemplates.hs PathHelpers.hs
+Main: Main.hs Application.hs Routes.hs MustacheTemplates.hs PathHelpers.hs Sqlite3.hs Keyserver.hs Assertion.hs Util.hs
 	ghc -Wall -fno-warn-name-shadowing Main.hs
 
 Routes.hs: routes
