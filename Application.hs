@@ -66,7 +66,7 @@ reportFor :: URI -> Connection -> RippleAddress -> Application
 reportFor _ db adr req = case gen of
 	Just x -> do
 		time <- liftIO (fmap floor getPOSIXTime :: IO Integer)
-		string ok200 disp (show time ++ ": " ++ show adr ++ " " ++ T.unpack x)
+		string ok200 disp (show time ++ ": " ++ show adr ++ " " ++ T.unpack x ++ "\n")
 	Nothing -> do
 		assertions <- liftIO $ query db (fromString "SELECT `from`, `fromFingerprint`, `to`, `at`, `asserted`, `assertion` FROM assertions WHERE `to` = ?") [adr]
 		handleAcceptTypes [
