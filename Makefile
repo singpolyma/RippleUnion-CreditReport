@@ -7,8 +7,8 @@ Routes.hs: routes
 PathHelpers.hs: routes
 	routeGenerator -p -n 2 $< > $@
 
-MustacheTemplates.hs: Records.hs view/report.mustache view/submit.mustache
-	mustache2hs -m Records.hs view/report.mustache Report view/submit.mustache SubmitForm > $@
+MustacheTemplates.hs: Records.hs view/report.mustache view/home.mustache
+	mustache2hs -m Records.hs view/report.mustache Report view/home.mustache HomeRec > $@
 
 clean:
 	find -name '*.o' -o -name '*.hi' | xargs $(RM)

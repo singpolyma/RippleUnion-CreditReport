@@ -33,8 +33,12 @@ instance TL.Buildable URI where
 instance ToField RippleAddress where
 	toField adr = toField (show adr)
 
-data SubmitForm = SubmitForm {
-		formAddress :: RippleAddress,
+data HomeRec = HomeRec {
+		forForm :: [Form]
+	}
+	deriving (Show, Eq)
+
+data Form = Form {
 		formAction :: URI
 	}
 	deriving (Show, Eq)

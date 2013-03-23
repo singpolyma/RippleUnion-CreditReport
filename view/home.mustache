@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<title>Ripple Union Credit Reports</title>
+
+		<style type="text/css">
+			html, body {
+				background-color: #abcdef;
+				font-family: "Liberation Sans", sans-serif;
+			}
+
+			body {
+				margin-left: 10%;
+				margin-right: 10%;
+				margin-top: 2em;
+			}
+
+			body > h1 {
+				overflow: hidden;
+			}
+
+			h1 * {
+				vertical-align: middle;
+			}
+
+			h1 img {
+				float: left;
+				padding-right: 5em;
+			}
+
+			.rippleAddress {
+				font-size: 0.5em;
+			}
+
+			a[rel=enclosure] img {
+				position: relative;
+				top: 4px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<h1><img src="/logo.png" alt="Ripple Union" /> Credit Reports</h1>
+
+		<p>This credit reporting system is designed to give support to Ripple.com organizations and users who want to extend credit to other users.  Every time a user to whom you have extended credit makes a payment on that credit, you may submit an OpenPGP signed message saying:</p>
+
+		<blockquote>&lt;unix timestamp of transaction&gt;: &lt;Ripple.com address of user&gt; made a payment</blockquote>
+
+		<p>If you have an agreement that payments should be made, and a user does not uphold this agreement, the format is the same as above but you say "missed a payment".  If the user makes a payment, but then executes a chargeback (if you have, say, agreed to PayPal payments), you say "chargeback".  If a user consistently behaves in an untrustworthy manner, say "not trusted".  There are links on individual report pages to messages of the various types that you can simply download, sign with your OpenPGP key, and then upload again using the submit form for that address.</p>
+
+	<p>Note: <strong>signing subkeys are not supported</strong>.  This is a technical limitation we hope will be lifted soon.</p>
+
+		{{#forForm}}
+			<form method="get" action="{{formAction}}">
+				<input type="text" name="address" placeholder="Ripple.com address" />
+				<input type="submit" value="View Report" />
+			</form>
+		{{/forForm}}
+	</body>
+</html>

@@ -1,3 +1,4 @@
+GET / => home
+GET /for/ => for
 GET /for/: => reportFor
-GET /for/:/submit => submitFor
 POST /for/: => assertFor

@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<base href="http://rippleunion.com/" />
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>Ripple Union Credit Report for {{address}}</title>
 
@@ -38,25 +37,47 @@
 				position: relative;
 				top: 4px;
 			}
+
+			input { display: block; }
 		</style>
 	</head>
 
 	<body>
 		<h1><img src="/logo.png" alt="Ripple Union" /> Credit Report for <span class="rippleAddress">{{address}}</span></h1>
 
-		<ul>
-		{{#assertions}}
-			<li>
-				<a href="data:application/pgp-encrypted;base64,{{signedAssertion}}" rel="enclosure"><img src="http://www.famfamfam.com/lab/icons/mini/icons/arrow_down.gif" alt="download signed assertion" title="download signed assertion" /></a>
+		<section>
+			<h1>Assertions</h1>
 
-				<time datetime="{{at8601}}">{{atHuman}}</time> —
-				<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&amp;search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
-				asserted that this address
-				{{#row}}
-					{{asserted}}
-				{{/row}}
-			</li>
-		{{/assertions}}
-		</ul>
+			<ul>
+			{{#assertions}}
+				<li>
+					<a href="data:application/pgp-encrypted;base64,{{signedAssertion}}" rel="enclosure"><img src="http://www.famfamfam.com/lab/icons/mini/icons/arrow_down.gif" alt="download signed assertion" title="download signed assertion" /></a>
+
+					<time datetime="{{at8601}}">{{atHuman}}</time> —
+					<a href="http://singpolyma.net:11371/pks/lookup?op=vindex&amp;search=0x{{#row}}{{fromFingerprint}}{{/row}}">{{keyId}}</a>
+					asserted that this address
+					{{#row}}
+						{{asserted}}
+					{{/row}}
+				</li>
+			{{/assertions}}
+			</ul>
+		</section>
+
+		<section>
+			<h1>Downloads to sign</h1>
+			<ul>
+				<li><a href="?newAssertion=made%20a%20payment">made a payment</a></li>
+				<li><a href="?newAssertion=missed%20a%20payment">missed a payment</a></li>
+				<li><a href="?newAssertion=chargeback">chargeback</a></li>
+				<li><a href="?newAssertion=not%20trusted">not trusted</a></li>
+			</ul>
+		</section>
+
+		<form method="post" action="" enctype="multipart/form-data">
+			<label for="assertion">Upload assertion</label>
+			<input type="file" id="assertion" name="assertion" />
+			<input type="submit" value="Submit" />
+		</form>
 	</body>
 </html>
