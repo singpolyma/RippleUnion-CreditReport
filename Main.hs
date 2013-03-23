@@ -4,7 +4,7 @@ import Prelude hiding (FilePath)
 import Control.Monad (void)
 import System.Environment (getArgs)
 import Network.URI (parseAbsoluteURI, URI(..))
-import Control.Error (err)
+import Control.Error (err, headMay)
 import Filesystem.Path (FilePath)
 import Filesystem (getWorkingDirectory)
 
@@ -31,12 +31,15 @@ staticRoot :: FilePath -> Application
 staticRoot = staticApp . defaultWebAppSettings
 
 main :: IO ()
-main = main' . map (fmap addTrailingSlash . parseAbsoluteURI) =<< getArgs
+main = do
+	args <- getArgs
+	let root = fmap addTrailingSlash (parseAbsoluteURI =<< headMay args)
+	main' root args
 	where
-	main' [Just root@(URI {uriAuthority = Just _})] = do
+	main' (Just root@(URI {uriAuthority = Just _})) (_:dbpth:_) = do
 		cwd <- getWorkingDirectory
-		void $ withConnection "./dev.db"
+		void $ withConnection dbpth
 			(\db -> run 3000 $
 				logStdoutDev $ autohead $ acceptOverride $ jsonp $ -- Middleware
 				dispatch (staticRoot cwd) $ routes root db)        -- Do routing
-	main' _ = err "Usage: ./Main <Root URI>"
+	main' _ _ = err "Usage: ./Main <Root URI> <DB path>"

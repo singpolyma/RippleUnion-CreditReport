@@ -7,7 +7,8 @@ Main
 MustacheTemplates.hs
 PathHelpers.hs
 Routes.hs
-dev.db
+*.db
+*.sqlite3
 tests/suite
 dist/*
 report.html
