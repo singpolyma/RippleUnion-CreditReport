@@ -1,8 +1,11 @@
 module Util where
 
-import Control.Error (readMay)
+import Control.Error (readMay, tryIO, eitherT)
 import Data.Binary (Binary, decodeOrFail)
 import qualified Data.ByteString.Lazy as LZ
+
+tryIO' :: (IOError -> e) -> IO (Either e b) -> IO (Either e b)
+tryIO' mapErr io = eitherT (return . Left . mapErr) return (tryIO io)
 
 decodeM :: (Binary a, Monad m) => LZ.ByteString -> m a
 decodeM bytes = case decodeOrFail bytes of

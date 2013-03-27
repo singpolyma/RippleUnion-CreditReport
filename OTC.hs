@@ -3,9 +3,12 @@ module OTC where
 import Control.Applicative ((<$>), (<*>))
 import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Network.HTTP as HTTP
+import qualified Network.HTTP.Stream as HTTP (ConnError(..))
 import qualified Data.Aeson as Aeson
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as LZ
+
+import Util
 
 data OTCKey = OTCKey String String deriving (Eq, Show)
 
@@ -21,7 +24,7 @@ otcKeyToTuple (OTCKey fpr nick) = Just (fpr, nick)
 
 otcKeys :: IO [(String, String)]
 otcKeys = do
-	r <- HTTP.simpleHTTP req
+	r <- tryIO' (HTTP.ErrorMisc . show) $ HTTP.simpleHTTP req
 	-- XXX: Data is all ASCII, but this is still a terrible hack
 	let rbytes = LZ.pack . map (toEnum.fromEnum) . HTTP.rspBody <$> r
 	case rbytes of
