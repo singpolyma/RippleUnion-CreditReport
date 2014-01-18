@@ -54,7 +54,7 @@ home :: URI -> Connection -> Application
 home root _ _ =
 	return $ responseTextBuilder ok200 headers (viewHome htmlEscape $ HomeRec [Form $ forPath `relativeTo` root])
 	where
-	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]
+	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf-8")]
 
 for :: URI -> Connection -> Application
 for root _ req = case adr of
@@ -84,7 +84,7 @@ reportFor _ db adr req = case gen of
 	fFpr _ = ""
 	gen = fmap (T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "newAssertion") (queryString req)
 	Just disp = stringHeaders [("Content-Disposition", "attachment; filename=assertion.txt")]
-	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf8")]
+	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf-8")]
 
 assertFor :: URI -> Connection -> RippleAddress -> Application
 assertFor root db adr req = do
