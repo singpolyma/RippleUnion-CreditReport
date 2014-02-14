@@ -6,7 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Time.Clock (getCurrentTime, diffUTCTime, addUTCTime)
 import Control.Error (noteT, EitherT(..), MaybeT(..), hoistMaybe, throwT, headMay)
 import Database.SQLite.Simple (Connection, query, execute)
-import Control.Monad.Trans (liftIO)
+import Control.Monad.IO.Class (liftIO)
 import qualified Data.OpenPGP as OpenPGP
 import qualified Data.OpenPGP.CryptoAPI as OpenPGP
 
