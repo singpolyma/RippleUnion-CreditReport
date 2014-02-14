@@ -1,25 +1,7 @@
-html, body {
-	background-color: #abcdef;
-	font-family: "Liberation Sans", sans-serif;
-}
+@import "//rippleunion.com/base.css";
 
-body {
-	margin-left: 10%;
-	margin-right: 10%;
-	margin-top: 2em;
-}
-
-body > h1 {
-	overflow: hidden;
-}
-
-h1 * {
-	vertical-align: middle;
-}
-
-h1 img {
-	float: left;
-	padding-right: 5em;
+header {
+	margin-bottom: 1em;
 }
 
 .rippleAddress {
