@@ -7,6 +7,7 @@ import Network.URI (parseAbsoluteURI, URI(..))
 import Control.Error (err, headMay)
 import Filesystem.Path (FilePath)
 import Filesystem (getWorkingDirectory)
+import OpenSSL (withOpenSSL)
 
 import Network.Wai (Application)
 import Network.Wai.Handler.Warp (run)
@@ -31,7 +32,7 @@ staticRoot :: FilePath -> Application
 staticRoot = staticApp . defaultWebAppSettings
 
 main :: IO ()
-main = do
+main = withOpenSSL $ do
 	args <- getArgs
 	let root = fmap addTrailingSlash (parseAbsoluteURI =<< headMay args)
 	main' root args

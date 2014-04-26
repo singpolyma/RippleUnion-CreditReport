@@ -12,6 +12,7 @@ import Network.Wai.Util (string, stringHeaders, json, bodyBytestring, redirect',
 import Web.PathPieces (PathPiece(..))
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Base58Address (RippleAddress)
+import qualified Ripple.Federation as Federation
 import Control.Error (readMay, headMay)
 import Control.Monad.IO.Class (liftIO)
 import Database.SQLite.Simple (Connection, query)
@@ -57,12 +58,25 @@ home root _ _ =
 	Just headers = stringHeaders [("Content-Type", "text/html; charset=utf-8")]
 
 for :: URI -> Connection -> Application
-for root _ req = case adr of
-		Just adr -> redirect' seeOther303 [] (reportForPath adr `relativeTo` root)
-		Nothing -> string badRequest400 [] "Invalid Ripple.com address.\n"
+for root _ req = do
+		a <- maybeResolve adr
+		case a of
+			Just adr -> redirect' seeOther303 [] (reportForPath adr `relativeTo` root)
+			Nothing -> string badRequest400 [] "Invalid Ripple.com address.\n"
 	where
-	adr = readMay =<< fmap T.unpack adrS
-	adrS = fmap (T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "address") (queryString req)
+	adr = fmap (T.unpack . T.decodeUtf8 . fromMaybe BS.empty) $ lookup (fromString "address") (queryString req)
+	maybeResolve adr = case adr >>= readMay of
+		Just r -> return (Just r)
+		_ -> case (adr, adr >>= readMay) of
+			(_, Just alias) -> do
+				v <- liftIO $ Federation.resolve alias
+				liftIO $ print (alias, v)
+				case v of
+					Right (Federation.ResolvedAlias _ r Nothing) -> return (Just r)
+					_ -> return Nothing
+			(Just ('~':rippleName), _) -> maybeResolve (Just $ rippleName ++ "@ripple.com")
+			(Just rippleName, _) -> maybeResolve (Just $ rippleName ++ "@ripple.com")
+			(_, _) -> return Nothing
 
 reportFor :: URI -> Connection -> RippleAddress -> Application
 reportFor _ db adr req = case gen of
